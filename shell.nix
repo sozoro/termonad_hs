@@ -7,13 +7,11 @@ let
     };
   };
 in
-  pkgs.mkShell {
-    nativeBuildInputs = [
-      (haskellPackages.ghcWithPackages (p: with p; [ termonad optparse-applicative ]))
-      pkgs.hlint
-    ];
+  (pkgs.callPackage ./default.nix {
+    haskellPackages = haskellPackages;
+  }).overrideDerivation (old: {
     shellHook = ''
       ghci termonad.hs
       exit 0
     '';
-  }
+  })
