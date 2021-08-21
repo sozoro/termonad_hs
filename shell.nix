@@ -14,4 +14,7 @@ in
       ghci termonad.hs
       exit 0
     '';
+    nativeBuildInputs = old.nativeBuildInputs ++ [
+      pkgs.hlint
+    ];
   })
