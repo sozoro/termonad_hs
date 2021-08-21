@@ -61,36 +61,35 @@ bgDefOpacity :: Double
 bgDefOpacity = 0.7
 
 colConf :: ColourConfig (AlphaColour Double)
-colConf =
-  defaultColourConfig
-    { foregroundColour = Set $ opaque $ SRGB.sRGB24 227 234 252
-    , backgroundColour = Set $ bgBaseColor `Colour.withOpacity` bgDefOpacity
-    , palette          = fromMaybe NoPalette $ ExtendedPalette <$> standard <*> extended
-    } where
-      fromHexCC :: String -> Maybe (AlphaColour Double)
-      fromHexCC = fmap (uncurry4 sRGB32 . fst) . listToMaybe . readHexColourCode
-      standard :: Maybe (List8 (AlphaColour Double))
-      standard = mkList8 =<< sequence
-        [ fromHexCC "#263238"
-        , fromHexCC "#FF5252"
-        , fromHexCC "#68F3C9"
-        , fromHexCC "#FEE94E"
-        , fromHexCC "#2BCFF0"
-        , fromHexCC "#F02BA2"
-        , fromHexCC "#68B6F3"
-        , fromHexCC "#ECEFF1"
-        ]
-      extended :: Maybe (List8 (AlphaColour Double))
-      extended = mkList8 =<< sequence
-        [ fromHexCC "#525252"
-        , fromHexCC "#FF7281"
-        , fromHexCC "#68F3C9"
-        , fromHexCC "#FEE94E"
-        , fromHexCC "#2BCFF0"
-        , fromHexCC "#F02BA2"
-        , fromHexCC "#68B6F3"
-        , fromHexCC "#FFFFFF"
-        ]
+colConf = defaultColourConfig
+  { foregroundColour = Set $ opaque $ SRGB.sRGB24 227 234 252
+  , backgroundColour = Set $ bgBaseColor `Colour.withOpacity` bgDefOpacity
+  , palette          = fromMaybe NoPalette $ ExtendedPalette <$> standard <*> extended
+  } where
+    fromHexCC :: String -> Maybe (AlphaColour Double)
+    fromHexCC = fmap (uncurry4 sRGB32 . fst) . listToMaybe . readHexColourCode
+    standard :: Maybe (List8 (AlphaColour Double))
+    standard = mkList8 =<< sequence
+      [ fromHexCC "#263238"
+      , fromHexCC "#FF5252"
+      , fromHexCC "#68F3C9"
+      , fromHexCC "#FEE94E"
+      , fromHexCC "#2BCFF0"
+      , fromHexCC "#F02BA2"
+      , fromHexCC "#68B6F3"
+      , fromHexCC "#ECEFF1"
+      ]
+    extended :: Maybe (List8 (AlphaColour Double))
+    extended = mkList8 =<< sequence
+      [ fromHexCC "#525252"
+      , fromHexCC "#FF7281"
+      , fromHexCC "#68F3C9"
+      , fromHexCC "#FEE94E"
+      , fromHexCC "#2BCFF0"
+      , fromHexCC "#F02BA2"
+      , fromHexCC "#68B6F3"
+      , fromHexCC "#FFFFFF"
+      ]
 
 fontConf :: FontConfig
 fontConf = defaultFontConfig
@@ -160,27 +159,27 @@ colourToRgba colour alpha' = do
   RGBA.setRGBAGreen rgba green
   RGBA.setRGBABlue  rgba blue
   RGBA.setRGBAAlpha rgba alpha
-  pure rgba
+  return rgba
 
 opacityDiff :: Double
 opacityDiff = 0.025
 
-bgOpacityUp :: Terminal.Terminal -> Colour.Colour Double -> IO Bool
-bgOpacityUp vteTerm base = do
+bgOpacityInc :: Terminal.Terminal -> Colour.Colour Double -> IO Bool
+bgOpacityInc vteTerm base = do
   opacity <- RGBA.getRGBAAlpha =<< Terminal.terminalGetColorBackgroundForDraw vteTerm
   colourToRgba base (opacity + opacityDiff)
     >>= Terminal.terminalSetColorBackground vteTerm
   return True
 
-bgOpacityDown :: Terminal.Terminal -> Colour.Colour Double -> IO Bool
-bgOpacityDown vteTerm base = do
+bgOpacityDec :: Terminal.Terminal -> Colour.Colour Double -> IO Bool
+bgOpacityDec vteTerm base = do
   opacity <- RGBA.getRGBAAlpha =<< Terminal.terminalGetColorBackgroundForDraw vteTerm
   colourToRgba base (opacity - opacityDiff)
     >>= Terminal.terminalSetColorBackground vteTerm
   return True
 
-bgOpacityReset :: Terminal.Terminal -> Colour.Colour Double -> IO Bool
-bgOpacityReset vteTerm base = do
+bgOpacityIni :: Terminal.Terminal -> Colour.Colour Double -> IO Bool
+bgOpacityIni vteTerm base = do
   colourToRgba base bgDefOpacity >>= Terminal.terminalSetColorBackground vteTerm
   return True
 
@@ -192,9 +191,9 @@ setCustomKeyMappings = ConfigHooks $ \mvarTMState vteTerm -> do
     let key = removeStrangeModifiers $ toKey keyval (Set.fromList modifiers)
     -- print key
     case key of
-      Key 125 md | ctrlShft `Set.isSubsetOf` md -> bgOpacityUp    vteTerm bgBaseColor
-      Key 123 md | ctrlShft `Set.isSubsetOf` md -> bgOpacityDown  vteTerm bgBaseColor
-      Key  96 md | ctrlShft `Set.isSubsetOf` md -> bgOpacityReset vteTerm bgBaseColor
+      Key 125 md | ctrlShft `Set.isSubsetOf` md -> bgOpacityInc vteTerm bgBaseColor
+      Key 123 md | ctrlShft `Set.isSubsetOf` md -> bgOpacityDec vteTerm bgBaseColor
+      Key  96 md | ctrlShft `Set.isSubsetOf` md -> bgOpacityIni vteTerm bgBaseColor
       _ -> return False
       where
         ctrlShft :: Set.Set Flags.ModifierType
