@@ -13,7 +13,16 @@
     ];
     systems   = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
     perSystem = { pkgs, system, ... }: rec {
-      packages.default  = pkgs.callPackage ./default.nix {};
+      packages.default =
+        let
+          haskellPackages = pkgs.haskellPackages.override {
+            overrides = self: super: rec {
+              termonad = super.termonad.overrideAttrs (old: {
+                meta = old.meta // { broken = false; };
+              });
+            };
+          };
+        in pkgs.callPackage ./default.nix { inherit haskellPackages; };
       devshells.default = {
         packages = packages.default.nativeBuildInputs ++ [ pkgs.hlint ];
         devshell.startup.ghci.text  = ''
