@@ -37,7 +37,7 @@
       addpkg = { pkgs, ... }: {
         nixpkgs.config = {
           packageOverrides = oldpkgs: let newpkgs = oldpkgs.pkgs; in {
-            "${self.name}" = self.packages."${pkgs.system}".default;
+            "${self.name}" = self.packages."${pkgs.stdenv.hostPlatform.system}".default;
           };
         };
       };
