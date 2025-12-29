@@ -9,6 +9,7 @@ import           Termonad.App
 import           Termonad.Config
 import           Termonad.Config.Colour
 import           Termonad.Types
+import           Termonad.IdMap.Internal                   (IdMap,nextId,IdMapKey(..))
 import           Termonad.Keys
 import           Control.Concurrent.MVar
 import           Control.Monad.Trans                       (lift)
@@ -105,9 +106,19 @@ instance Semigroup ConfigHooks where
 instance Monoid ConfigHooks where
   mempty = ConfigHooks $ \_ _ -> return ()
 
+-- TMWindowId appears to always be 0 in termonad version 4.6.0.0
+-- I don't know this is the right way to get the value...
+getTMWindowId :: IdMap TMWindow -> TMWindowId
+getTMWindowId = IdMapKey . pred . nextId
+
+getWindow :: TMState -> IO Gtk.ApplicationWindow
+getWindow mvarTMState = do
+  wins <- tmStateWindows <$> readMVar mvarTMState
+  tmWindowAppWin <$> getTMWindowFromWins wins (getTMWindowId wins)
+
 mkTransparent :: ConfigHooks
 mkTransparent = ConfigHooks $ \mvarTMState _ -> do
-  win <- tmStateAppWin <$> readMVar mvarTMState
+  win <- getWindow mvarTMState
   Gtk.widgetSetAppPaintable win True
   Gtk.widgetSetVisual win =<< runMaybeT do
     screen <- MaybeT Screen.screenGetDefault
@@ -126,7 +137,7 @@ setAllowBold b = ConfigHooks $ \_ vteTerm -> Terminal.setTerminalAllowBold vteTe
 
 setDefaultWinTitle :: T.Text -> ConfigHooks
 setDefaultWinTitle title = ConfigHooks $ \mvarTMState _ -> do
-  win <- tmStateAppWin <$> readMVar mvarTMState
+  win <- getWindow mvarTMState
   void $ Gtk.onWidgetShow win $ Gtk.windowSetTitle win title
 
 execCommand :: Maybe String -> ConfigHooks
