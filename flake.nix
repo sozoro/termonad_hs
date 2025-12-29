@@ -17,8 +17,24 @@
         let
           haskellPackages = pkgs.haskellPackages.override {
             overrides = self: super: rec {
-              termonad = super.termonad.overrideAttrs (old: {
-                meta = old.meta // { broken = false; };
+              # Fix build failure with latest haskell-gi.
+              # Since haskell-gi changed its packaging policy, we must explicitly use 'gi-gtk3' and other versioned packages instead of the generic ones.
+              # See: https://github.com/NixOS/nixpkgs/issues/446880
+              termonad = (super.callHackageDirect {
+                pkg    = "termonad";
+                ver    = "4.6.0.0";
+                sha256 = "GErZ6pJ9MmxVI+zFbTmn1uTJMer1NNMUBuexHKnUQO8=";
+              } {
+                vte_291 = pkgs.vte;
+                gi-gtk  = super.gi-gtk3;
+                gi-gdk  = super.gi-gdk3;
+              }).overrideDerivation (old: {
+                prePatch = ''
+                  sed -i '
+                    s/, gi-gtk >= 3.0.24$/, gi-gtk3/
+                    s/, gi-gdk$/, gi-gdk3/
+                  ' termonad.cabal
+                '';
               });
             };
           };
